@@ -5,7 +5,6 @@
   "main": "test.js",
   "scripts": {
     "test": "mocha test.js",
-    "debug": "mocha test.js --inspect-brk",
     "postinstall": "node postinstall.js"
   },
   "engines": {
