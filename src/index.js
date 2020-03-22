@@ -1,48 +1,62 @@
-const numReg = "(-?[\\d.]+(e(\\+|-)\\d+)?)",
-      opsRegs = ["([/*])", "([+-])"],
 
-      doubleOpsFix = expr => expr
-        .replace(/(\d)(--)(\d)/g, "$1+$3").replace(/(\d)(-)(\d)/g, "$1+-$3"),
-
-      ops = {
-        "+": (a, b) => Number(a) + Number(b),
-        "-": (a, b) => a - b,
-        "*": (a, b) => a * b,
-        "/": (a, b) => {
-          if (!Number(b)) throw new Error("TypeError: Division by zero.")
-          return a / b
-        }
-      }
-
-exports.expressionCalculator = expr => {
-  expr = expr.replace(/\s*/g, "")
-  const parenthesis = expr.match(/\(|\)/g)
-  if (parenthesis) {
-    let count = 0
-    for (const char of parenthesis) {
-      if (char === "(") count++
-      else count--
-      if (count<0) throw new Error("ExpressionError: Brackets must be paired")
+const mathSplit = (expr, operator) => {
+  const arr = []
+  let from = 0, depth = 0
+  for (let i=0; i<expr.length; ++i) {
+    if (expr[i] == '(') ++depth
+    else if (expr[i] == ')') {
+      --depth
+      if (depth < 0) throw new Error("ExpressionError: Brackets must be paired")
     }
-    if (count>0) throw new Error("ExpressionError: Brackets must be paired")
-    while (true) {
-      const subExpr = expr.match(/\([^()]+\)/)
-      if (!subExpr) break
-      expr = expr.replace(subExpr[0], calc(subExpr[0].slice(1, -1)))
+    else if (expr[i] == operator && !depth) {
+      arr.push(expr.slice(from, i))
+      from = i+1
     }
   }
-  return calc(expr)
+  if (depth) throw new Error("ExpressionError: Brackets must be paired")
+  arr.push(expr.slice(from))
+  return arr
 }
 
-function calc(expr) {
-  for (const opsReg of opsRegs) {
-    while (true) {
-      expr = doubleOpsFix(expr)
-      const nextToCalc = expr.match(new RegExp(numReg + opsReg + numReg))
-      if (!nextToCalc) break
-      const [subExpr, left, , , op, right] = nextToCalc
-      expr = expr.replace(subExpr, ops[op](left, right))
+const parseParentheses = expr => {
+  const match = expr.match(/^\((.*)\)$/)
+  if (!match) return expr
+  let depth = 0
+  for (let i=0; i<expr.length; ++i) {
+    if (expr[i] == '(') ++depth
+    else if (expr[i] == ')') {
+      --depth
+      if (!depth && i!=expr.length-1) return expr
     }
   }
-  return +expr
+  return parsePlus(match[1])
+}
+
+const parsePlus = expr => typeof expr == 'number'? expr :
+  mathSplit(expr, '+').map(parseParentheses).map(parseMinus)
+    .reduce((result, operand) => +result + +operand)
+
+const parseMinus = expr => typeof expr == 'number'? expr :
+  mathSplit(expr, '–').map(parseParentheses)
+    .map(parseMultiply).reduce((result, operand) => result - operand)
+
+const parseMultiply = expr => typeof expr == 'number'? expr :
+  mathSplit(expr, '*').map(parseParentheses)
+    .map(parseDivide).reduce((result, operand) => result * operand)
+
+const parseDivide = expr => typeof expr == 'number'? expr :
+  mathSplit(expr, '/').map(parseParentheses)
+    .reduce((result, operand) => {
+      if (!+operand) throw new Error("TypeError: Division by zero.")
+      return result / operand
+    })
+
+
+function expressionCalculator(expr) {
+  expr = expr.replace(/\s*/g, "").replace(/-/g, '–')
+  return parsePlus(expr)
+}
+
+module.exports = {
+  expressionCalculator
 }
