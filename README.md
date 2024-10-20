@@ -1,6 +1,8 @@
 # Expression calculator
 
-## Task
+## Rolling Scopes Task
+
+![image](https://github.com/user-attachments/assets/6bd13cbd-f247-4613-a367-a4f05035a2fd)
 
 Your task is to implement function, which calculates the result for any math expressions.
 Write your solution in `src/index.js`
