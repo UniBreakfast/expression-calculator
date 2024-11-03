@@ -1,4 +1,4 @@
-# Expression calculator
+# [Expression calculator](https://github.com/UniBreakfast/expression-calculator)
 
 ## Rolling Scopes Task
 
